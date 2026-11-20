@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>소복소복 설정</title>
+<style>
+  @font-face { font-family: "SnowFont"; src: url("../assets/HSHwalgongGulim-Regular.otf") format("opentype"); }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: "SnowFont", "Malgun Gothic", "Segoe UI", sans-serif; font-size: 14px; color: #3d4c6d;
+    background: linear-gradient(180deg, #dfe9f8, #f4f8fd 38%, #ffffff);
+    padding: 20px 22px 18px; user-select: none; overflow: hidden;
+  }
+  h1 { font-size: 20px; font-weight: 400; color: #33415c; display: flex; align-items: center; gap: 8px; }
+  h1 i { width: 12px; height: 12px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 4px rgba(127,163,220,.3), 0 2px 6px rgba(60,90,150,.3); }
+  .sub { font-size: 12.5px; color: #7c8aa8; margin: 5px 0 16px; }
+  section { margin-bottom: 15px; }
+  label.t { display: block; font-size: 13px; color: #5b6d94; margin-bottom: 7px; }
+  .seg { display: flex; background: #e6edf8; border-radius: 12px; padding: 3px; gap: 3px; }
+  .seg button {
+    flex: 1; font: inherit; font-size: 13.5px; color: #5b6d94; border: 0; background: transparent;
+    padding: 8px 4px; border-radius: 9px; cursor: pointer; transition: background .15s, color .15s, box-shadow .15s;
+  }
+  .seg button:hover { background: rgba(255,255,255,.55); }
+  .seg button.on { background: #fff; color: #2f4f8f; box-shadow: 0 2px 6px rgba(50,80,140,.18); }
+  .row { display: flex; align-items: center; justify-content: space-between; padding: 8px 2px; }
+  .row + .row { border-top: 1px dashed #dbe4f2; }
+  .row span { font-size: 13.5px; }
+  .row small { display: block; font-size: 11.5px; color: #8b98b4; margin-top: 2px; }
+  .sw { position: relative; width: 42px; height: 24px; flex: 0 0 auto; border-radius: 12px; background: #cfd9ea; cursor: pointer; transition: background .18s; }
+  .sw::after { content: ""; position: absolute; left: 3px; top: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(40,60,110,.3); transition: transform .18s; }
+  .sw.on { background: #6f96dc; }
+  .sw.on::after { transform: translateX(18px); }
+  label.t b { font-weight: 400; color: #2f4f8f; margin-left: 4px; }
+  input[type=range] { width: 100%; height: 22px; accent-color: #6f96dc; cursor: pointer; }
+  .chk { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: #3d4c6d; cursor: pointer; }
+  .chk input { width: 16px; height: 16px; accent-color: #6f96dc; cursor: pointer; }
+  .info {
+    position: relative; display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%;
+    font: italic 700 11px Georgia, serif; color: #fff; background: #9fb3d6; cursor: help; outline: none;
+  }
+  .info em {
+    position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%); width: 220px; padding: 8px 10px; border-radius: 10px;
+    font: 12px/1.5 "SnowFont", "Malgun Gothic", sans-serif; font-style: normal; color: #3d4c6d; background: #fff; word-break: keep-all;
+    box-shadow: 0 4px 14px rgba(50,80,140,.22); opacity: 0; pointer-events: none; transition: opacity .15s;
+  }
+  .info:hover em, .info:focus em { opacity: 1; }
+  .acts { display: flex; gap: 8px; margin-top: 16px; }
+  .acts button {
+    flex: 1; font: inherit; font-size: 13.5px; padding: 10px 6px; border-radius: 12px; border: 0; cursor: pointer;
+    background: #fff; color: #45557a; box-shadow: 0 2px 8px rgba(50,80,140,.14), inset 0 0 0 1px #e3eaf5; transition: transform .12s, background .15s;
+  }
+  .acts button:hover { background: #f3f7fd; }
+  .acts button:active { transform: scale(.96); }
+  .acts button.quit { color: #b8483f; }
+  .foot { margin-top: 13px; font-size: 11.5px; color: #8b98b4; line-height: 1.6; }
+  kbd { font: inherit; font-size: 11px; background: #e8eef9; color: #4a5f8f; border-radius: 5px; padding: 1px 6px; }
+</style>
+</head>
+<body>
+  <h1><i></i>소복소복 설정</h1>
+  <p class="sub">바꾸면 바로 적용되고, 다음에 켤 때도 그대로야.</p>
+
+  <section>
+    <label class="t">나는… (눈사람이 건네는 말이 달라져)</label>
+    <div class="seg" data-key="profile">
+      <button data-v="worker">직장인</button><button data-v="student">학생</button><button data-v="free">그 외</button>
+    </div>
+  </section>
+  <section>
+    <label class="t">눈 내리는 양 (많이 내릴수록 빨리 쌓여)</label>
+    <div class="seg" data-key="amount">
+      <button data-v="0.5">조금</button><button data-v="1">보통</button><button data-v="1.6">많이</button><button data-v="2.2">펑펑</button>
+    </div>
+  </section>
+
+  <section>
+    <label class="t">말풍선이 나오는 빈도</label>
+    <div class="seg" data-key="talk">
+      <button data-v="0.4">아주 자주</button><button data-v="1">자주</button><button data-v="2.2">가끔</button><button data-v="4.5">아주 가끔</button>
+    </div>
+  </section>
+  <section>
+    <label class="t">말풍선 글자 크기 <b id="fontVal"></b></label>
+    <input type="range" id="font" min="0.7" max="1.8" step="0.05">
+  </section>
+  <section>
+    <label class="chk">
+      <input type="checkbox" data-key="light">
+      <span>가볍게 모드</span>
+      <i class="info" tabindex="0">i<em>컴퓨터가 버벅이거나 노트북 배터리를 아끼고 싶을 때 켜 줘. 그래픽 카드를 덜 쓰는 대신 눈이 조금 끊겨 보여.</em></i>
+    </label>
+  </section>
+
+  <div class="acts">
+    <button data-act="plow">제설차 부르기</button>
+    <button data-act="quit" class="quit">종료</button>
+  </div>
+  <p class="foot">
+    <kbd id="modKey">Ctrl</kbd> 누른 채 눈 클릭 → 눈덩이 만들기
+  </p>
+
+<script src="../src/native-shim.js"></script>
+<script>
+  const api = window.snowSettings;
+  function paint(state) {
+    document.querySelectorAll('.seg').forEach(seg => {
+      const cur = String(state[seg.dataset.key]);
+      seg.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === cur));
+    });
+    document.querySelectorAll('.sw').forEach(sw => sw.classList.toggle('on', !!state[sw.dataset.key]));
+    document.querySelectorAll('input[type=checkbox][data-key]').forEach(c => { c.checked = !!state[c.dataset.key]; });
+  }
+  let state = {};
+  const fontEl = document.getElementById('font'), fontVal = document.getElementById('fontVal');
+  const paintFont = () => { fontEl.value = state.font || 1; fontVal.textContent = Math.round((state.font || 1) * 100) + '%'; };
+  fontEl.addEventListener('input', () => { state.font = Number(fontEl.value); paintFont(); api.set('font', state.font); });
+  api.get().then(s => { state = s; paint(state); paintFont(); });
+  document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
+    const key = b.parentElement.dataset.key, raw = b.dataset.v, value = isNaN(Number(raw)) ? raw : Number(raw);
+    state[key] = value; paint(state); api.set(key, value);
+  }));
+  document.querySelectorAll('.sw').forEach(sw => sw.addEventListener('click', () => {
+    const key = sw.dataset.key; state[key] = !state[key]; paint(state); api.set(key, state[key]);
+  }));
+  document.querySelectorAll('.info').forEach(i => i.addEventListener('click', e => e.preventDefault()));   // 설명 아이콘을 눌러도 체크가 바뀌지 않게
+  document.querySelectorAll('input[type=checkbox][data-key]').forEach(c => c.addEventListener('change', () => {
+    state[c.dataset.key] = c.checked; api.set(c.dataset.key, c.checked);
+  }));
+  document.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => api.action(b.dataset.act)));
+  // 창을 다시 띄울 때마다 최신 값으로
+  window.addEventListener('focus', () => api.get().then(s => { state = s; paint(state); paintFont(); }));
+</script>
+<script>if (/Mac/i.test(navigator.platform || navigator.userAgent)) document.getElementById("modKey").textContent = "⌘";</script>
+</body>
+</html>

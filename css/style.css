@@ -1,0 +1,145 @@
+@font-face {
+  font-family: "SnowFont";
+  src: url("../assets/HSHwalgongGulim-Regular.otf") format("opentype");
+  font-display: swap;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: #8fa9d2;
+  font-family: "SnowFont", "Segoe UI Variable", "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  color: #33415c;
+  user-select: none; -webkit-user-select: none;
+}
+canvas { position: fixed; left: 0; top: 0; width: 100%; height: 100%; display: block; }
+#bg { z-index: 0; }
+#desktop { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
+#fg { z-index: 2; touch-action: none; cursor: default; }
+#ui { position: fixed; inset: 0; z-index: 3; pointer-events: none; }
+
+/* ---------- desktop icons ---------- */
+.icons { position: absolute; left: 18px; top: 20px; display: flex; flex-direction: column; gap: 18px; }
+.icon { width: 72px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.icon span { font-size: 11.5px; color: #fff; text-shadow: 0 1px 3px rgba(30, 50, 95, .55); letter-spacing: -.01em; }
+.glyph { width: 42px; height: 38px; position: relative; filter: drop-shadow(0 3px 5px rgba(30, 50, 95, .28)); }
+.g-pc { border-radius: 6px; background: linear-gradient(160deg, #eef5ff, #b9cdec); border: 2px solid #f8fbff; height: 30px; }
+.g-pc i { position: absolute; left: 50%; bottom: -9px; width: 20px; height: 5px; margin-left: -10px; border-radius: 3px; background: #f1f6fd; }
+.g-pc::after { content: ""; position: absolute; inset: 3px; border-radius: 3px; background: linear-gradient(160deg, #7fa3d8, #a9c6ee); }
+.g-folder { border-radius: 6px; background: linear-gradient(170deg, #ffe2a3, #f2b95c); margin-top: 4px; height: 32px; }
+.g-folder i { position: absolute; left: 0; top: -6px; width: 20px; height: 10px; border-radius: 5px 6px 0 0; background: #f6c873; }
+.g-bin { width: 30px; height: 36px; border-radius: 5px 5px 9px 9px; background: linear-gradient(170deg, #f4f8fe, #c4d3ea); }
+.g-bin i { position: absolute; left: -4px; top: -5px; width: 38px; height: 6px; border-radius: 3px; background: #f7faff; }
+
+/* ---------- windows ---------- */
+.win {
+  position: absolute; border-radius: 12px; overflow: hidden;
+  box-shadow: 0 22px 48px rgba(28, 46, 90, .26), 0 3px 8px rgba(28, 46, 90, .16), inset 0 0 0 1px rgba(255, 255, 255, .35);
+  display: flex; flex-direction: column;
+}
+.win header {
+  height: 36px; flex: 0 0 36px; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 12px 0 14px; font-size: 12px;
+}
+.win header b { font-weight: 600; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ctl { display: flex; gap: 7px; }
+.ctl i { width: 10px; height: 10px; border-radius: 50%; background: rgba(60, 80, 120, .22); }
+.win .body { flex: 1; min-height: 0; padding: 16px 18px; }
+
+.win-notes { background: #fbf4e6; color: #5b4a3a; }
+.win-notes header { background: #e6d3b3; color: #6b553d; }
+.win-notes h4 { font-size: 14px; font-weight: 700; margin-bottom: 10px; color: #4e3f31; }
+.win-notes ul { list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 12.5px; }
+.win-notes li { display: flex; align-items: center; gap: 9px; }
+.win-notes li::before { content: ""; width: 13px; height: 13px; border-radius: 4px; border: 1.5px solid #c9b08a; flex: 0 0 auto; }
+.win-notes li.done { color: #a8957d; text-decoration: line-through; text-decoration-color: rgba(168, 149, 125, .6); }
+.win-notes li.done::before { background: #d8a25a; border-color: #d8a25a; box-shadow: inset 0 0 0 2.5px #fbf4e6; }
+.win-notes .memo { margin-top: 16px; font-size: 11.5px; color: #a08c72; font-style: italic; border-top: 1px dashed #dccbaa; padding-top: 10px; }
+
+.win-photos { background: #eef3fa; }
+.win-photos header { background: #5c76a6; color: #f2f6fc; }
+.win-photos .ctl i { background: rgba(255, 255, 255, .4); }
+.thumbs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; height: 100%; }
+.t { border-radius: 8px; min-height: 40px; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .5); position: relative; overflow: hidden; }
+.t::after { content: ""; position: absolute; left: -10%; right: -10%; bottom: -40%; height: 70%; border-radius: 50%; background: rgba(255, 255, 255, .78); }
+.t1 { background: linear-gradient(180deg, #7b97c9, #cbd9ee); }
+.t2 { background: linear-gradient(180deg, #f3c9a9, #f6e3d6); }
+.t3 { background: linear-gradient(180deg, #5d6f9c, #a9b8d8); }
+.t4 { background: linear-gradient(180deg, #9fc0d8, #e3eef5); }
+.t5 { background: linear-gradient(180deg, #c5a9c9, #ecdfee); }
+.t6 { background: linear-gradient(180deg, #86a79d, #d3e2dc); }
+
+.win-music { background: #27324d; color: #e9eefb; }
+.win-music header { background: #1d2740; color: #c9d4ee; }
+.win-music .ctl i { background: rgba(255, 255, 255, .22); }
+.win-music .body { display: flex; gap: 14px; align-items: center; }
+.cover {
+  flex: 0 0 auto; width: 34%; aspect-ratio: 1; max-width: 96px; border-radius: 10px;
+  background:
+    radial-gradient(circle at 68% 30%, #ffe2b5 0 9%, transparent 10%),
+    radial-gradient(ellipse at 50% 120%, #f4f8ff 0 48%, transparent 49%),
+    linear-gradient(180deg, #51649a, #c58f9a 78%);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, .3);
+}
+.track { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.track strong { font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.track em { font-size: 11px; font-style: normal; color: #93a2c6; }
+.bar { height: 4px; border-radius: 2px; background: rgba(255, 255, 255, .14); margin-top: 10px; overflow: hidden; }
+.bar div { width: 38%; height: 100%; border-radius: 2px; background: #f2b27a; animation: prog 90s linear infinite; }
+@keyframes prog { from { width: 4%; } to { width: 100%; } }
+.btns { display: flex; align-items: center; gap: 16px; margin-top: 10px; }
+.btns i { display: block; }
+.btns .play { width: 26px; height: 26px; border-radius: 50%; background: #f1f5ff; position: relative; }
+.btns .play::after { content: ""; position: absolute; left: 10px; top: 7.5px; border: 5.5px solid transparent; border-left: 8px solid #27324d; border-right: 0; }
+.btns .prev, .btns .next { width: 0; height: 0; border: 5px solid transparent; }
+.btns .prev { border-right: 8px solid #a9b6d6; border-left: 0; }
+.btns .next { border-left: 8px solid #a9b6d6; border-right: 0; }
+
+/* ---------- taskbar ---------- */
+#taskbar {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 48px;
+  background: linear-gradient(180deg, rgba(226, 235, 248, .92), rgba(206, 219, 240, .95));
+  box-shadow: 0 -1px 0 rgba(255, 255, 255, .6), 0 -8px 24px rgba(40, 60, 110, .14);
+  display: flex; align-items: center; justify-content: center;
+}
+.apps { display: flex; gap: 12px; }
+.apps i { width: 26px; height: 26px; border-radius: 7px; display: block; box-shadow: 0 2px 4px rgba(40, 60, 110, .2), inset 0 0 0 1px rgba(255, 255, 255, .4); }
+.a1 { background: linear-gradient(140deg, #6fa0e6, #4f78c8); }
+.a2 { background: linear-gradient(140deg, #f6c56c, #ee9f4a); }
+.a3 { background: linear-gradient(140deg, #7fcfb0, #4fa58a); }
+.a4 { background: linear-gradient(140deg, #ef8f8f, #d65f6a); }
+.a5 { background: linear-gradient(140deg, #b7a3e6, #8a78c8); }
+.tray { position: absolute; right: 18px; font-size: 12px; color: #4a5b80; font-variant-numeric: tabular-nums; }
+
+/* ---------- overlay ui ---------- */
+#hint {
+  position: absolute; left: 50%; top: 18px; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 9px;
+  padding: 9px 18px 9px 14px; border-radius: 999px;
+  background: rgba(255, 255, 255, .78);
+  box-shadow: 0 8px 24px rgba(30, 50, 95, .18), inset 0 0 0 1px rgba(255, 255, 255, .7);
+  font-size: 13px; font-weight: 500; color: #3d4c6d; white-space: nowrap;
+  transition: opacity .35s ease, transform .35s ease;
+}
+#hint.swap { opacity: 0; transform: translateX(-50%) translateY(-6px); }
+#hint .flake { width: 8px; height: 8px; border-radius: 50%; background: #7fa3dc; box-shadow: 0 0 0 4px rgba(127, 163, 220, .22); animation: pulse 2.4s ease-in-out infinite; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 7px rgba(127, 163, 220, 0); } }
+#controls { position: absolute; right: 18px; top: 18px; display: flex; gap: 8px; pointer-events: auto; }
+#controls button {
+  font: inherit; font-size: 12px; font-weight: 500; color: #45557a; cursor: pointer;
+  padding: 8px 14px; border-radius: 999px; border: 0;
+  background: rgba(255, 255, 255, .62);
+  box-shadow: 0 4px 14px rgba(30, 50, 95, .14), inset 0 0 0 1px rgba(255, 255, 255, .7);
+  transition: background .2s, transform .15s;
+}
+#controls button:hover { background: rgba(255, 255, 255, .88); }
+#controls button:active { transform: scale(.96); }
+#brand { position: absolute; left: 18px; bottom: 15px; font-size: 12px; font-weight: 600; letter-spacing: .02em; color: #5b6d94; }
+
+@media (max-width: 760px) {
+  .icons { display: none; }
+  #hint { font-size: 12px; top: 58px; }
+}
+
+/* ---------- Electron 데스크탑 위젯 모드: 실제 바탕화면 위에 눈만 그린다 ---------- */
+html.native, html.native body { background: transparent; }
+html.native #bg, html.native #desktop, html.native #ui { display: none; }

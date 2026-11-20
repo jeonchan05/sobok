@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>소복소복</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<canvas id="bg"></canvas>
+
+<!-- 가상의 데스크탑 (Electron 이식 시 이 레이어는 사라지고 실제 창 좌표가 대신 들어온다) -->
+<div id="desktop">
+  <div class="icons">
+    <div class="icon"><div class="glyph g-pc"><i></i></div><span>내 PC</span></div>
+    <div class="icon"><div class="glyph g-folder"><i></i></div><span>겨울 사진</span></div>
+    <div class="icon"><div class="glyph g-bin"><i></i></div><span>휴지통</span></div>
+  </div>
+
+  <section class="win win-notes" id="win-notes">
+    <header><b>메모 — 겨울 할 일</b><span class="ctl"><i></i><i></i><i></i></span></header>
+    <div class="body">
+      <h4>12월의 작은 계획</h4>
+      <ul>
+        <li class="done">귤 한 박스 사기</li>
+        <li class="done">목도리 꺼내기</li>
+        <li>코코아 끓이기</li>
+        <li>눈사람 만들기</li>
+        <li>창가에 전구 달기</li>
+      </ul>
+      <p class="memo">눈이 오면 일은 잠깐 미뤄도 괜찮아.</p>
+    </div>
+  </section>
+
+  <section class="win win-photos" id="win-photos">
+    <header><b>사진 — 첫눈 오던 날</b><span class="ctl"><i></i><i></i><i></i></span></header>
+    <div class="body">
+      <div class="thumbs">
+        <div class="t t1"></div><div class="t t2"></div><div class="t t3"></div>
+        <div class="t t4"></div><div class="t t5"></div><div class="t t6"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="win win-music" id="win-music">
+    <header><b>Winter Radio</b><span class="ctl"><i></i><i></i><i></i></span></header>
+    <div class="body">
+      <div class="cover"></div>
+      <div class="track">
+        <strong>Snowfall at Dusk</strong>
+        <em>lo-fi winter mix</em>
+        <div class="bar"><div></div></div>
+        <div class="btns"><i class="prev"></i><i class="play"></i><i class="next"></i></div>
+      </div>
+    </div>
+  </section>
+
+  <footer id="taskbar">
+    <div class="apps"><i class="a1"></i><i class="a2"></i><i class="a3"></i><i class="a4"></i><i class="a5"></i></div>
+    <div class="tray"><span id="clock">--:--</span></div>
+  </footer>
+</div>
+
+<canvas id="fg"></canvas>
+
+<div id="ui">
+  <div id="hint"><span class="flake"></span><span id="hintText">쌓인 눈을 꾹 눌러 눈덩이를 만들어 보세요</span></div>
+  <div id="controls">
+    <button id="btnSnow" title="눈 내리는 양">잔잔한 눈</button>
+    <button id="btnReset" title="처음부터 다시">다시 시작</button>
+  </div>
+  <div id="brand">소복소복</div>
+</div>
+
+<script src="src/native-shim.js"></script>
+<script src="src/util.js"></script>
+<script src="src/sprites.js"></script>
+<script src="src/wallpaper.js"></script>
+<script src="src/desktop.js"></script>
+<script src="src/snowfield.js"></script>
+<script src="src/snowfall.js"></script>
+<script src="src/particles.js"></script>
+<script src="src/plow.js"></script>
+<script src="src/snowball.js"></script>
+<script src="src/lines.js"></script>
+<script src="src/snowman.js"></script>
+<script src="src/main.js"></script>
+</body>
+</html>

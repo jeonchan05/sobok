@@ -1,0 +1,19 @@
+{
+  "name": "sobok",
+  "version": "1.0.0",
+  "description": "눈 내리는 바탕화면 위젯 — 눈을 굴려 눈사람을 만든다",
+  "main": "electron/main.js",
+  "private": true,
+  "license": "GPL-3.0-only",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.12.6",
+    "electron": "^45.3.4"
+  },
+  "dependencies": {
+    "koffi": "^3.3.8"
+  },
+  "productName": "소복소복"
+}

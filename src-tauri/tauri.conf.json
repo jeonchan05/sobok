@@ -1,0 +1,24 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "소복소복",
+  "version": "1.0.0",
+  "identifier": "com.sobok.widget",
+  "build": {
+    "frontendDist": "./web",
+    "beforeBuildCommand": "node scripts/copy-web.js",
+    "beforeDevCommand": "node scripts/copy-web.js"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "macOSPrivateApi": true,
+    "windows": [],
+    "security": { "csp": null }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "icon": ["icons/icon.ico", "icons/icon.png", "icons/icon.icns"],
+    "windows": { "nsis": { "installMode": "currentUser", "languages": ["Korean"] } },
+    "macOS": { "signingIdentity": "-", "minimumSystemVersion": "11.0" }
+  }
+}
