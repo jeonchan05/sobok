@@ -1,18 +1,46 @@
+<div align="center">
+
 # 소복소복
 
-화면에 눈이 쌓이고, 눈을 뭉쳐 굴려서 눈사람을 만드는 데스크탑 위젯이에요. Windows 10 · 11 과 macOS 에서 돌아요.
+**화면에 눈이 쌓이고, 눈을 굴려 눈사람을 만드는 데스크탑 위젯**
 
-**어떻게 생겼는지, 어떻게 설치하고 노는지는 [소개 페이지](https://lovejoohero0228.github.io/sobok-release/)에 있어요.**
-이 저장소는 소스 코드이고, 아래는 고치거나 직접 빌드해 보려는 분을 위한 내용이에요.
+[![release](https://img.shields.io/github/v/release/lovejoohero0228/sobok-release?label=release&color=4a7fd6)](https://github.com/lovejoohero0228/sobok-release/releases/latest) ![platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-6b7a99) ![Tauri 2](https://img.shields.io/badge/Tauri-2-24c8db) [![license](https://img.shields.io/badge/license-GPL--3.0-6b7a99)](https://github.com/lovejoohero0228/sobok/blob/main/LICENSE) [![stars](https://img.shields.io/github/stars/lovejoohero0228/sobok?style=flat&color=e8b93a)](https://github.com/lovejoohero0228/sobok/stargazers)
 
-마음에 드셨다면 별 ⭐ 하나 눌러 주세요. 눈사람이 좋아해요.
+[소개 · 사용법](https://lovejoohero0228.github.io/sobok-release/) · [내려받기](https://github.com/lovejoohero0228/sobok-release/releases/latest) · [버그 제보](https://github.com/lovejoohero0228/sobok/issues)
 
-| | |
-| --- | --- |
-| 바깥 틀 | Tauri 2 (Rust) |
-| 화면 | Canvas 2D (JavaScript), 외부 라이브러리 없음 |
-| 실행 파일 받는 곳 | [sobok-release](https://github.com/lovejoohero0228/sobok-release/releases/latest) |
-| 라이선스 | GPL-3.0 |
+<a href="https://lovejoohero0228.github.io/sobok-release/"><img src="https://raw.githubusercontent.com/lovejoohero0228/sobok-release/main/docs/hero.gif" alt="소복소복 화면" width="720"></a>
+
+</div>
+
+> **이 저장소는 소복소복의 소스 코드예요.**
+> 그냥 써 보고 싶다면 [소개 페이지](https://lovejoohero0228.github.io/sobok-release/)로, 코드가 궁금하거나 직접 고쳐 보고 싶다면 계속 읽어 주세요.
+> 마음에 드셨다면 별 ⭐ 하나 눌러 주세요. 눈사람이 좋아해요.
+
+## 무엇을 하나요
+
+- **눈이 쌓여요.** 작업 표시줄 · Dock 위에도, 열어 둔 창 위에도.
+- **눈사람을 만들어요.** 눈을 뭉쳐 굴리면 커지고, 쌓으면 눈사람이 돼요.
+- **눈사람이 말을 해요.** 눌러 보면 한마디 하고, 둘을 붙여 두면 자기들끼리 수다를 떨어요.
+- **방해하지 않아요.** 눈덩이와 눈사람 말고는 클릭이 아래 창으로 그대로 통과해요.
+- **가벼워요.** 실행 파일 하나, 이미지 파일 0개. 전부 Canvas 2D 코드로 그려요.
+
+## 설치
+
+명령 한 줄이에요. 관리자 권한이 필요 없고, 다시 실행하면 최신 버전으로 덮어써요.
+
+**Windows** — PowerShell 에 붙여 넣기
+
+```powershell
+powershell -c "irm https://raw.githubusercontent.com/lovejoohero0228/sobok-release/main/install.ps1 | iex"
+```
+
+**macOS** — 터미널에 붙여 넣기
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/lovejoohero0228/sobok-release/main/install-mac.sh | bash
+```
+
+노는 방법, 설정, 삭제 방법은 [소개 페이지](https://lovejoohero0228.github.io/sobok-release/)에 있어요.
 
 ## 어떻게 동작하나요
 
