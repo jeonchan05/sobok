@@ -555,9 +555,9 @@ mod mac {
     ///  - 화면에 보이는 일반 창들 [번호, L, T, R, B, 프로세스] (위→아래)
     ///  - 메뉴 막대 창(레이어 24)의 사각형 [L,T,R,B]. 화면(스페이스)을 넘기는 동안에는 옆으로 밀린다
     ///  - 전체 화면 스페이스가 켜져 있는가: Dock 이 전체 화면 앱 뒤에 까는 "Fullscreen Backdrop" 창(레이어 -2147483622)이 화면에 떠 있다
-    pub fn snapshot(skip_pid: i64) -> (Vec<[i64; 6]>, Option<[i64; 4]>, bool) {
+    pub fn snapshot(skip_pid: i64) -> (Vec<[i64; 6]>, Vec<[i64; 4]>, bool) {
         let mut out = Vec::new();
-        let (mut menubar, mut backdrop) = (None, false);
+        let (mut menubar, mut backdrop) = (Vec::new(), false); // 메뉴 막대는 모니터마다 하나씩 있다
         let Some(raw) = copy_window_info(kCGWindowListOptionOnScreenOnly, kCGNullWindowID) else {
             return (out, menubar, backdrop);
         };
@@ -576,10 +576,8 @@ mod mac {
                 continue;
             }
             if layer == 24.0 {
-                if menubar.is_none() {
-                    if let Some(r) = rect() {
-                        menubar = Some([r.origin.x.round() as i64, r.origin.y.round() as i64, (r.origin.x + r.size.width).round() as i64, (r.origin.y + r.size.height).round() as i64]);
-                    }
+                if let Some(r) = rect() {
+                    menubar.push([r.origin.x.round() as i64, r.origin.y.round() as i64, (r.origin.x + r.size.width).round() as i64, (r.origin.y + r.size.height).round() as i64]);
                 }
                 continue;
             }
@@ -766,7 +764,7 @@ fn start_overlay(app: &AppHandle) -> tauri::Result<()> {
                     last_snap = key;
                     for (k, m) in now.iter().enumerate() {
                         // "pt": 좌표가 이미 CSS 픽셀과 같은 단위라는 표시
-                        let payload = json!({ "c": c, "fg": [0, 0, 0, 0], "w": wins, "mons": [m], "dock": dock, "mb": mb, "fsb": fsb, "ox": m[0], "oy": m[1], "pt": true });
+                        let payload = json!({ "c": c, "fg": [0, 0, 0, 0], "w": wins, "mons": [m], "all": now, "dock": dock, "mbs": mb, "fsb": fsb, "ox": m[0], "oy": m[1], "pt": true });
                         let _ = app2.emit_to(format!("overlay-{k}"), "snap", payload);
                     }
                 }

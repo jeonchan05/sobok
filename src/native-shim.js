@@ -40,13 +40,21 @@
     if (raw.pt && raw.mons.length) {
       const m0 = raw.mons[0], bx = X(m0[0]), br = X(m0[2]), now = performance.now();
       // 화면이 넘어가는 중인가: 메뉴 막대 창이 옆으로 밀려 있거나, 창 둘 이상이 똑같이 옆으로 밀렸거나, 화면 옆으로 완전히 나간 창이 있다
-      let same = 0, dxs = null, sliding = !!(raw.mb && Math.abs(raw.mb[0] - m0[0]) > 1);
+      // 모니터가 여럿이면 다른 모니터의 메뉴 막대와 창이 함께 온다. 그것들을 '넘기는 중'으로 잘못 보면 눈이 계속 숨겨지므로 가려낸다:
+      //  - 메뉴 막대는 이 모니터의 것(윗변과 폭이 같은 것 중 가장 가까운 것)만 본다
+      //  - 다른 모니터 안에 있는 창, 화면 밖에 가만히 멈춰 있는 창은 세지 않는다
+      const mw = m0[2] - m0[0], mbs = raw.mbs || (raw.mb ? [raw.mb] : []);
+      let mbd = null;
+      for (const q of mbs) if (Math.abs(q[1] - m0[1]) <= 1 && Math.abs(q[2] - q[0] - mw) <= 2) { const d = Math.abs(q[0] - m0[0]); if (mbd === null || d < mbd) mbd = d; }
+      const others = (raw.all || []).filter(m => m[0] !== m0[0] || m[1] !== m0[1]);
+      const onOther = w => { const cx = w.x + w.w / 2 + ox, cy = w.y + Math.min(w.hgt / 2, 200) + oy; return others.some(m => cx >= m[0] && cx < m[2] && cy >= m[1] && cy < m[3]); };
+      let same = 0, dxs = null, sliding = mbd !== null && mbd > 1 && mbd < mw;
       const cur = new Map();
       for (const w of wins) {
         cur.set(w.h, [w.x, w.y]);
         const pv = prevPos.get(w.h);
         if (pv && Math.abs(w.y - pv[1]) < 1.5 && Math.abs(w.x - pv[0]) >= 6) { const dx = Math.round((w.x - pv[0]) / 2); if (dxs === null || Math.abs(dx - dxs) <= 1) { dxs = dx; same++; } }
-        if (w.x >= br - 1 || w.x + w.w <= bx + 1) sliding = true;
+        if ((w.x >= br - 1 || w.x + w.w <= bx + 1) && !onOther(w) && (!pv || Math.abs(w.x - pv[0]) >= 1)) sliding = true;
       }
       prevPos = cur;
       if (same >= 2) sliding = true;
