@@ -225,11 +225,12 @@
   // 한 바퀴 다 돌 때까지는 같은 말을 다시 하지 않는다 (섞은 카드 더미에서 한 장씩 뽑기)
   const decks = {};
   function draw(name) {
-    let d = decks[name];
+    const key = (SX.lang || 'ko') + ':' + name;      // 언어를 바꾸면 그 언어의 카드 더미에서 새로 뽑는다
+    let d = decks[key];
     if (!d || !d.length) {
       d = SX.lines[name].slice();
       for (let i = d.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; const t = d[i]; d[i] = d[j]; d[j] = t; }
-      decks[name] = d;
+      decks[key] = d;
     }
     return d.pop();
   }
@@ -249,7 +250,7 @@
     const r = Math.random();
     if (r < 0.25) {            // 썰렁한 농담 → 정적 → 혼자 머쓱 → 대답
       const j = draw('jokes'), c = draw('comebacks');
-      return { turns: [T(0, j[0], 4.5, j[1]), T(1, '…', 1.8), T(0, draw('awkward'), 2.5), T(1, c, 2.6)], laugh: /[ㅋㅎ]/.test(c) };
+      return { turns: [T(0, j[0], 4.5, j[1]), T(1, '…', 1.8), T(0, draw('awkward'), 2.5), T(1, c, 2.6)], laugh: /[ㅋㅎ]|haha|hehe/i.test(c) };
     }
     if (r < 0.58) return { turns: draw('talks').map((s, i) => T(i % 2, s, 2.4)), laugh: true };      // 여러 번 주고받기
     const c = draw('chats');

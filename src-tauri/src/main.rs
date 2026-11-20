@@ -29,14 +29,16 @@ struct Settings {
     talk: f64,       // 말풍선 간격 배율
     font: f64,       // 말풍선 글자 크기 배율
     light: bool,     // 가볍게 모드: 조용할 때 덜 자주 그려 GPU 를 아낀다
+    lang: String,    // ko | en | "" (비어 있으면 컴퓨터 언어를 따른다: 한국어가 아니면 영어)
 }
 impl Default for Settings {
     fn default() -> Self {
-        Settings { amount: 1.0, profile: "free".into(), talk: 1.0, font: 1.0, light: false }
+        Settings { amount: 1.0, profile: "free".into(), talk: 1.0, font: 1.0, light: false, lang: String::new() }
     }
 }
 struct AppState {
     settings: Mutex<Settings>,
+    menu: Mutex<Option<(MenuItem<tauri::Wry>, MenuItem<tauri::Wry>)>>, // 트레이 메뉴의 [설정 열기, 종료]: 언어를 바꾸면 글자를 바꾼다
 }
 
 fn config_file(app: &AppHandle, name: &str) -> Option<PathBuf> {
@@ -75,6 +77,7 @@ fn push_settings(app: &AppHandle, s: &Settings) {
     emit_cmd(app, "talk", json!(s.talk));
     emit_cmd(app, "font", json!(s.font));
     emit_cmd(app, "light", json!(s.light));
+    emit_cmd(app, "lang", json!(s.lang));
 }
 
 #[tauri::command]
@@ -91,12 +94,28 @@ fn settings_set(app: AppHandle, state: tauri::State<AppState>, key: String, valu
             "font" => if let Some(v) = value.as_f64() { s.font = v },
             "profile" => if let Some(v) = value.as_str() { s.profile = v.to_string() },
             "light" => if let Some(v) = value.as_bool() { s.light = v },
+            "lang" => if let Some(v) = value.as_str() { s.lang = v.to_string() },
             _ => {}
         }
         s.clone()
     };
     save_settings(&app, &snapshot);
     push_settings(&app, &snapshot);
+}
+/// 화면 쪽이 정한 언어(ko | en)에 맞춰 트레이 메뉴, 풍선 도움말, 설정 창 제목을 바꾼다
+#[tauri::command]
+fn ui_lang(app: AppHandle, state: tauri::State<AppState>, lang: String) {
+    let en = lang == "en";
+    if let Some((open, quit)) = state.menu.lock().unwrap().as_ref() {
+        let _ = open.set_text(if en { "Open Settings" } else { "설정 열기" });
+        let _ = quit.set_text(if en { "Quit" } else { "종료" });
+    }
+    if let Some(tray) = app.tray_by_id("main") {
+        let _ = tray.set_tooltip(Some(if en { "Sobok" } else { "소복소복" }));
+    }
+    if let Some(w) = app.get_webview_window("settings") {
+        let _ = w.set_title(if en { "Sobok Settings" } else { "소복소복 설정" });
+    }
 }
 #[tauri::command]
 fn settings_action(app: AppHandle, name: String) {
@@ -162,7 +181,7 @@ fn build_settings(app: &AppHandle) {
     let builder = builder.additional_browser_args(BROWSER_ARGS);
     let built = builder
         .title("소복소복 설정")
-        .inner_size(400.0, 520.0)
+        .inner_size(400.0, 590.0)
         .resizable(false)
         .maximizable(false)
         .minimizable(false)
@@ -784,9 +803,9 @@ fn main() {
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             show_settings(app); // 이미 떠 있는데 다시 실행하면 설정 창을 연다
         }))
-        .manage(AppState { settings: Mutex::new(Settings::default()) })
+        .manage(AppState { settings: Mutex::new(Settings::default()), menu: Mutex::new(None) })
         .invoke_handler(tauri::generate_handler![
-            settings_get, settings_set, settings_action, set_ignore, overlay_ready, open_settings, log_line
+            settings_get, settings_set, settings_action, ui_lang, set_ignore, overlay_ready, open_settings, log_line
         ])
         .setup(|app| {
             let handle = app.handle().clone();
@@ -795,7 +814,8 @@ fn main() {
             let open = MenuItem::with_id(app, "open", "설정 열기", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "종료", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&open, &quit])?;
-            let mut tray = TrayIconBuilder::new().tooltip("소복소복").menu(&menu).show_menu_on_left_click(false);
+            *app.state::<AppState>().menu.lock().unwrap() = Some((open.clone(), quit.clone()));
+            let mut tray = TrayIconBuilder::with_id("main").tooltip("소복소복").menu(&menu).show_menu_on_left_click(false);
             if let Some(icon) = app.default_window_icon() {
                 tray = tray.icon(icon.clone());
             }

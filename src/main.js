@@ -415,6 +415,7 @@
       else if (name === 'snowRate') world.snowRate = arg;
       else if (name === 'pileRate') world.pileRate = arg;
       else if (name === 'profile') SX.profile = arg;
+      else if (name === 'lang') { const l = SX.setLang(arg); if (window.snowNative.uiLang) window.snowNative.uiLang(l); }   // 트레이 메뉴와 창 제목도 같은 언어로
       else if (name === 'font') SX.fontScale = U.clamp(Number(arg) || 1, 0.6, 2);
       else if (name === 'talk') {
         SX.talkEvery = Number(arg) || 1;
@@ -735,7 +736,7 @@
     if (world.ctrlHover > 0.45 && world.ctrlHover < 6) {
       const P = world.pointer, hv = world.ctrlHover;
       const a = Math.min(1, (hv - 0.45) * 4) * (1 - U.smoothstep(5.3, 6, hv));
-      const rows = [[MAC ? '⌘ + 클릭' : 'Ctrl + 클릭', '눈덩이 만들기']];
+      const EN = SX.lang === 'en', rows = [[(MAC ? '⌘ + ' : 'Ctrl + ') + (EN ? 'click' : '클릭'), EN ? 'make a snowball' : '눈덩이 만들기']];
       ctx.save();
       const fz = SX.fontScale || 1, rh = Math.round(24 * fz);
       const fk = (12 * fz).toFixed(1) + 'px "SnowFont", "Malgun Gothic", sans-serif', ft = (12.5 * fz).toFixed(1) + 'px "SnowFont", "Malgun Gothic", sans-serif';

@@ -59,54 +59,86 @@
 </style>
 </head>
 <body>
-  <h1><i></i>소복소복 설정</h1>
-  <p class="sub">바꾸면 바로 적용되고, 다음에 켤 때도 그대로야.</p>
+  <h1><i></i><span data-t="title">소복소복 설정</span></h1>
+  <p class="sub" data-t="sub">바꾸면 바로 적용되고, 다음에 켤 때도 그대로야.</p>
 
   <section>
-    <label class="t">나는… (눈사람이 건네는 말이 달라져)</label>
+    <label class="t" data-t="who">나는… (눈사람이 건네는 말이 달라져)</label>
     <div class="seg" data-key="profile">
-      <button data-v="worker">직장인</button><button data-v="student">학생</button><button data-v="free">그 외</button>
+      <button data-v="worker" data-t="worker">직장인</button><button data-v="student" data-t="student">학생</button><button data-v="free" data-t="free">그 외</button>
     </div>
   </section>
   <section>
-    <label class="t">눈 내리는 양 (많이 내릴수록 빨리 쌓여)</label>
+    <label class="t" data-t="amount">눈 내리는 양 (많이 내릴수록 빨리 쌓여)</label>
     <div class="seg" data-key="amount">
-      <button data-v="0.5">조금</button><button data-v="1">보통</button><button data-v="1.6">많이</button><button data-v="2.2">펑펑</button>
+      <button data-v="0.5" data-t="a1">조금</button><button data-v="1" data-t="a2">보통</button><button data-v="1.6" data-t="a3">많이</button><button data-v="2.2" data-t="a4">펑펑</button>
     </div>
   </section>
 
   <section>
-    <label class="t">말풍선이 나오는 빈도</label>
+    <label class="t" data-t="talk">말풍선이 나오는 빈도</label>
     <div class="seg" data-key="talk">
-      <button data-v="0.4">아주 자주</button><button data-v="1">자주</button><button data-v="2.2">가끔</button><button data-v="4.5">아주 가끔</button>
+      <button data-v="0.4" data-t="t1">아주 자주</button><button data-v="1" data-t="t2">자주</button><button data-v="2.2" data-t="t3">가끔</button><button data-v="4.5" data-t="t4">아주 가끔</button>
     </div>
   </section>
   <section>
-    <label class="t">말풍선 글자 크기 <b id="fontVal"></b></label>
+    <label class="t"><span data-t="font">말풍선 글자 크기</span> <b id="fontVal"></b></label>
     <input type="range" id="font" min="0.7" max="1.8" step="0.05">
   </section>
   <section>
     <label class="chk">
       <input type="checkbox" data-key="light">
-      <span>가볍게 모드</span>
-      <i class="info" tabindex="0">i<em>컴퓨터가 버벅이거나 노트북 배터리를 아끼고 싶을 때 켜 줘. 그래픽 카드를 덜 쓰는 대신 눈이 조금 끊겨 보여.</em></i>
+      <span data-t="light">가볍게 모드</span>
+      <i class="info" tabindex="0">i<em data-t="lightInfo">컴퓨터가 버벅이거나 노트북 배터리를 아끼고 싶을 때 켜 줘. 그래픽 카드를 덜 쓰는 대신 눈이 조금 끊겨 보여.</em></i>
     </label>
   </section>
 
+  <section>
+    <label class="t">언어 · Language</label>
+    <div class="seg" data-key="lang">
+      <button data-v="ko">한국어</button><button data-v="en">English</button>
+    </div>
+  </section>
+
   <div class="acts">
-    <button data-act="plow">제설차 부르기</button>
-    <button data-act="quit" class="quit">종료</button>
+    <button data-act="plow" data-t="plow">제설차 부르기</button>
+    <button data-act="quit" class="quit" data-t="quit">종료</button>
   </div>
   <p class="foot">
-    <kbd id="modKey">Ctrl</kbd> 누른 채 눈 클릭 → 눈덩이 만들기
+    <kbd id="modKey">Ctrl</kbd> <span data-t="foot">누른 채 눈 클릭 → 눈덩이 만들기</span>
   </p>
 
 <script src="../src/native-shim.js"></script>
 <script>
   const api = window.snowSettings;
+  // 화면 글자. 한국어는 HTML 에 적힌 그대로 쓰고, 영어만 여기서 바꿔 끼운다
+  const EN = {
+    title: 'Sobok Settings', sub: 'Changes apply right away and stick next time.',
+    who: 'I am… (changes what the snowmen say)', worker: 'Working', student: 'Student', free: 'Other',
+    amount: 'Snowfall (more snow piles up faster)', a1: 'Light', a2: 'Normal', a3: 'Heavy', a4: 'Blizzard',
+    talk: 'How often they talk', t1: 'A lot', t2: 'Often', t3: 'Sometimes', t4: 'Rarely',
+    font: 'Speech bubble text size', light: 'Light mode',
+    lightInfo: 'Turn this on if your computer stutters or you want to save laptop battery. It uses less of the graphics card, but the snow looks a little choppy.',
+    plow: 'Call the snowplow', quit: 'Quit', foot: '+ click on snow → make a snowball',
+  };
+  const KO = {};
+  document.querySelectorAll('[data-t]').forEach(e => { KO[e.dataset.t] = e.textContent; });
+  const resolveLang = v => v === 'ko' || v === 'en' ? v : /^ko/i.test(navigator.language || '') ? 'ko' : 'en';
+  let shownLang = '';
+  function applyLang(v) {
+    const lang = resolveLang(v);
+    if (lang === shownLang) return lang;
+    shownLang = lang;
+    const dict = lang === 'en' ? EN : KO;
+    document.querySelectorAll('[data-t]').forEach(e => { e.textContent = dict[e.dataset.t]; });
+    document.documentElement.lang = lang;
+    document.title = dict.title;
+    if (api.uiLang) api.uiLang(lang);
+    return lang;
+  }
   function paint(state) {
     document.querySelectorAll('.seg').forEach(seg => {
-      const cur = String(state[seg.dataset.key]);
+      const cur = seg.dataset.key === 'lang' ? applyLang(state.lang) : String(state[seg.dataset.key]);
       seg.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === cur));
     });
     document.querySelectorAll('.sw').forEach(sw => sw.classList.toggle('on', !!state[sw.dataset.key]));

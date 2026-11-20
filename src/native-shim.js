@@ -11,6 +11,7 @@
     get: () => invoke('settings_get'),
     set: (key, value) => invoke('settings_set', { key, value }),
     action: name => invoke('settings_action', { name }),
+    uiLang: lang => invoke('ui_lang', { lang }),
   };
   if (location.pathname.indexOf('settings') >= 0) return;      // 설정 창은 여기까지만 필요하다
 
@@ -193,6 +194,7 @@
     ready: () => { invoke('overlay_ready'); },
     openMenu: () => { invoke('open_settings'); },       // 가벼운 버전에서는 우클릭하면 바로 설정 창을 연다
     openSettings: () => { invoke('open_settings'); },
+    uiLang: lang => { invoke('ui_lang', { lang }); },
     log: msg => { invoke('log_line', { msg: String(msg) }); },
   };
 })();
