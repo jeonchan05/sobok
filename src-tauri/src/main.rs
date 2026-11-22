@@ -723,7 +723,13 @@ fn start_overlay(app: &AppHandle) -> tauri::Result<()> {
     let pid = std::process::id() as i64;
     let stress = std::env::var("SOBOK_STRESS").ok();
     std::thread::spawn(move || {
-        let (mut tick, mut last_cur, mut last_snap) = (0u64, (i32::MIN, 0), String::new());
+        let mut tick = 0u64;
+        let mut last_cur = (i32::MIN, 0);
+        let mut layout = (Vec::new(), Vec::new(), false);
+        let mut displays = mons;
+        let mut last_modifier = None;
+        let mut last_dock = None;
+        let mut next_snapshot_tick = 0u64;
         let mut ready_at = 0u64;
         let (mut log_after, mut logged) = (0u64, 0u32);
         loop {
@@ -738,36 +744,52 @@ fn start_overlay(app: &AppHandle) -> tauri::Result<()> {
             if stress.is_some() && tick == ready_at + 300 {
                 emit_cmd(&app2, "stress", json!(stress));
             }
-            if stress.is_some() && (tick - ready_at) % 600 == 60 {
-                // 점검용 기록: 읽어 온 창·모니터·커서
-                log_line(app2.clone(), format!("mac snapshot: mons={:?} cursor={:?} mod={} windows={:?}", mac_monitors(&app2), mac::cursor(), mac::modifier(), mac::snapshot(pid).0));
-            }
             let cur = mac::cursor();
-            if cur != last_cur {
+            let cursor_moved = cur != last_cur;
+            if cursor_moved {
                 last_cur = cur;
                 for w in overlays(&app2) {
                     let _ = app2.emit_to(w.label(), "cur", [cur.0, cur.1]);
                 }
             }
-            if tick % 4 == 0 {
-                let (c, (wins, mb, fsb)) = (mac::modifier(), mac::snapshot(pid));
-                let now = mac_monitors(&app2);
-                let dock = *mac::DOCK.lock().unwrap();
-                let key = json!({ "c": c, "w": wins, "m": now, "d": dock, "mb": mb, "fsb": fsb }).to_string();
-                if key != last_snap {
-                    // 점검용: 창 배치가 바뀔 때마다 기록한다 (2초에 한 번, 실행마다 300줄까지)
-                    if tick >= log_after && logged < 300 {
-                        log_after = tick + 120;
-                        logged += 1;
-                        log_line(app2.clone(), format!("mac layout: mons={:?} dock={:?} mb={:?} fsb={} windows={:?}", now, dock, mb, fsb, wins));
-                    }
-                    last_snap = key;
-                    for (k, m) in now.iter().enumerate() {
-                        // "pt": 좌표가 이미 CSS 픽셀과 같은 단위라는 표시
-                        let payload = json!({ "c": c, "fg": [0, 0, 0, 0], "w": wins, "mons": [m], "all": now, "dock": dock, "mbs": mb, "fsb": fsb, "ox": m[0], "oy": m[1], "pt": true });
-                        let _ = app2.emit_to(format!("overlay-{k}"), "snap", payload);
-                    }
-                }
+
+            let modifier = mac::modifier();
+            let dock = *mac::DOCK.lock().unwrap();
+            let mut changed = last_modifier != Some(modifier) || last_dock != dock;
+            if tick % 32 == 0 {
+                let current_displays = mac_monitors(&app2);
+                changed |= current_displays != displays;
+                displays = current_displays;
+            }
+
+            // 창 배치가 안정됐을 때만 창 목록의 조회 간격을 늘린다.
+            if tick >= next_snapshot_tick || (cursor_moved && tick >= next_snapshot_tick.saturating_sub(4)) {
+                let current_layout = mac::snapshot(pid);
+                let layout_changed = current_layout != layout;
+                next_snapshot_tick = tick + if layout_changed || cursor_moved { 4 } else { 8 };
+                changed |= layout_changed;
+                layout = current_layout;
+            }
+
+            let (wins, mb, fsb) = &layout;
+            if stress.is_some() && (tick - ready_at) % 600 == 60 {
+                log_line(app2.clone(), format!("mac snapshot: mons={:?} cursor={:?} mod={} windows={:?}", displays, cur, modifier, wins));
+            }
+            if !changed {
+                continue;
+            }
+            last_modifier = Some(modifier);
+            last_dock = dock;
+            // 점검용: 창 배치가 바뀔 때마다 기록한다 (2초에 한 번, 실행마다 300줄까지)
+            if tick >= log_after && logged < 300 {
+                log_after = tick + 120;
+                logged += 1;
+                log_line(app2.clone(), format!("mac layout: mons={:?} dock={:?} mb={:?} fsb={} windows={:?}", displays, dock, mb, fsb, wins));
+            }
+            for (k, m) in displays.iter().enumerate() {
+                // "pt": 좌표가 이미 CSS 픽셀과 같은 단위라는 표시
+                let payload = json!({ "c": modifier, "fg": [0, 0, 0, 0], "w": wins, "mons": [m], "all": displays, "dock": dock, "mbs": mb, "fsb": fsb, "ox": m[0], "oy": m[1], "pt": true });
+                let _ = app2.emit_to(format!("overlay-{k}"), "snap", payload);
             }
         }
     });

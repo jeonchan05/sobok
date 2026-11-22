@@ -88,15 +88,16 @@
       const dot = L === 2 ? SX.sprites.blur : SX.sprites.dot;
       for (const f of this.flakes) {
         if (f.L !== L || !f.on) continue;
+        const s = f.crystal || L === 2 ? f.size : f.size * 1.7;
+        const margin = f.crystal ? s * Math.SQRT2 : s;
+        if (f.x + margin < 0 || f.x - margin > this.W || f.y + margin < 0 || f.y - margin > this.H) continue;
         ctx.globalAlpha = f.alpha;
         if (f.crystal) {
-          const s = f.size;
           ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.rot);
           ctx.scale(1, 0.72 + 0.28 * Math.cos(f.rot * 1.7 + f.ph));  // 살짝 뒤집히며 떨어지는 느낌
           ctx.drawImage(SX.sprites.crystal, -s, -s, s * 2, s * 2);
           ctx.restore();
         } else {
-          const s = L === 2 ? f.size : f.size * 1.7;
           ctx.drawImage(dot, f.x - s, f.y - s, s * 2, s * 2);
         }
       }

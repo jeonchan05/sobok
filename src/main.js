@@ -8,10 +8,12 @@
   const hintEl = document.getElementById('hint'), hintText = document.getElementById('hintText');
   const NATIVE = !!window.snowNative;
   const MAC = /Mac/i.test(navigator.platform || navigator.userAgent || '');                 // Electron 데스크탑 위젯으로 실행 중
+  const MAC_WIDGET = NATIVE && MAC;
   if (NATIVE) document.documentElement.classList.add('native');
 
   const world = (SX.world = {
-    W: 0, H: 0, dpr: 1, dprCap: 2, time: 0,
+    // Retina 전체 화면을 덮는 투명 캔버스의 내부 해상도를 제한한다.
+    W: 0, H: 0, dpr: 1, dprCap: MAC_WIDGET ? 1 : 2, time: 0,
     surfaces: [], ground: null, grounds: [], balls: [], snowmen: [], effects: [], twinkles: [],
     stash: new Map(),         // 다른 창에 가려져 잠시 안 보이는 창의 눈 (다시 보이면 그대로 돌아온다)
     plow: null, plowT: 3, plowDir: 1, fsRects: [], ctrl: false, pressMan: null, ctrlHover: 0,
@@ -433,7 +435,7 @@
       else if (name === 'plow') callPlow();
       else if (name === 'stress') { if (arg === 'settings') window.snowNative.openSettings(); else stress(); }
       else if (name === 'follow') world.follow = !!arg;
-      else if (name === 'light') calmMs = arg ? 95 : 30;
+      else if (name === 'light') calmMs = arg ? 95 : normalCalmMs;
     });
   }
 
@@ -761,10 +763,11 @@
   }
 
   // ================= 루프 =================
-  // 조용할 때 그리는 간격. 기본은 약 30fps, '가볍게 모드'면 약 10fps.
+  // 평상시 macOS는 최대 약 60fps, Windows는 약 30fps를 그린다. '가볍게 모드'에서는 약 10fps.
   // 투명 전체 화면 창은 한 번 그릴 때마다 Windows 화면 합성(dwm)이 화면 전체를 다시 합성하므로 그리는 횟수가 곧 GPU 부하다.
   // 실측 (2560x1440 두 대): 30fps → dwm 3D 약 40%, 10fps → 약 17~22%. 대신 10fps 는 눈이 조금 끊겨 보인다.
-  let calmMs = 30;
+  const normalCalmMs = MAC_WIDGET ? 15 : 30;
+  let calmMs = normalCalmMs;
   let last = 0, slow = 0, frames = 0;
   function frame(now) {
     requestAnimationFrame(frame);
@@ -775,17 +778,29 @@
     perfNote(raw * 1000, calm);
     last = now;
     if (raw <= 0) return;
-    // 조용할 때는 그린 간격만큼 물리를 나눠 진행해 눈이 느려지지 않게 하고,
-    // 그 밖에는 탭 전환 등으로 긴 프레임이 와도 물리가 튀지 않게 한 걸음만 진행한다
-    let left = Math.min(raw, calm ? 0.15 : 1 / 24);
-    while (left > 1e-6) { const dt = Math.min(left, 1 / 24); update(dt); left -= dt; }
+    // macOS에서 움직이는 물체는 놓친 프레임의 시간도 짧게 나누어 따라잡는다.
+    if (MAC_WIDGET && !calm) {
+      const elapsed = Math.min(raw, 1 / 12);
+      const steps = Math.ceil(elapsed / (1 / 60 + 0.001));
+      for (let i = 0; i < steps; i++) update(elapsed / steps);
+    } else {
+      let left = Math.min(raw, calm ? 0.15 : 1 / 24);
+      while (left > 1e-6) { const dt = Math.min(left, 1 / 24); update(dt); left -= dt; }
+    }
     render();
-    // 느린 환경에서는 해상도와 눈송이 수를 한 단계 낮춘다
+    // macOS는 시작부터 내부 해상도를 제한하므로 실행 중 눈송이를 다시 만들 필요가 없다.
+    if (MAC_WIDGET) return;
     frames++;
-    if (calm) { /* 일부러 느리게 그리는 중이므로 '느린 환경' 판정에 넣지 않는다 */ }
-    else if (frames > 60 && raw < 0.2) {
+    if (calm) return;
+    if (frames > 60 && raw < 0.2) {
       slow = slow * 0.97 + raw * 0.03;
-      if (slow > 0.027 && world.dprCap > 1) { world.dprCap = 1; world.snowfall.density = 0.6; slow = 0; frames = 0; softResize(); }
+      if (slow > 0.027 && world.dprCap > 1) {
+        world.dprCap = 1;
+        world.snowfall.density = 0.6;
+        slow = 0;
+        frames = 0;
+        softResize();
+      }
     } else if (frames <= 60) slow = 1 / 60;
   }
   // 프레임 간격 기록: 20초마다 로그 파일에 요약을 남긴다 (끊김이 있는지 숫자로 확인하기 위한 것)
@@ -804,7 +819,7 @@
   // 지금 화면에 빠르게 움직이는 것이 있는가 (있으면 60fps, 없으면 calmMs 간격)
   function busy() {
     if (world.held || world.pressMan || world.plow || world.particles.list.length) return true;
-    if (world.time - world.pointer.movedAt < 1.2) return true;
+    if (world.time - world.pointer.movedAt < 1.2 && (!MAC || !passing)) return true;
     for (const b of world.balls) if (b.state !== 'free' && b.state !== 'stacked' || b.vx !== 0 || b.contact < 0.9 || b.form < 1) return true;
     for (const s of world.snowmen) if (s.hopY > 0 || s.drag || s.gvy !== 0 || s.chat || (s.state !== 'idle' && s.state !== 'asleep' && s.state !== 'sleepy') || (s.bubble && s.bubble.t < 0.5)) return true;
     return false;
