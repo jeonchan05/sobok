@@ -11,8 +11,15 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 use std::time::Duration;
 use tauri::menu::{Menu, MenuItem};
-use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, WebviewUrl, WebviewWindowBuilder};
+#[cfg(not(target_os = "macos"))]
+use tauri::tray::{MouseButton, MouseButtonState, TrayIconEvent};
+use tauri::tray::TrayIconBuilder;
+#[cfg(windows)]
+use tauri::{PhysicalPosition, PhysicalSize};
+use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
+
+#[cfg(target_os = "macos")]
+mod macos_desktop;
 
 static READY: AtomicBool = AtomicBool::new(false);
 #[cfg(windows)]
@@ -99,16 +106,23 @@ fn settings_set(app: AppHandle, state: tauri::State<AppState>, key: String, valu
     push_settings(&app, &snapshot);
 }
 #[tauri::command]
-fn settings_action(app: AppHandle, name: String) {
+async fn settings_action(app: AppHandle, name: String) -> Result<(), String> {
     match name.as_str() {
         "plow" => emit_cmd(&app, "plow", json!(null)),
         "quit" => app.exit(0),
+        #[cfg(target_os = "macos")]
+        "seoul" => macos_desktop::apply_seoul_theme(app).await?,
         _ => {}
     }
+    Ok(())
 }
 #[tauri::command]
 fn set_ignore(window: tauri::WebviewWindow, ignore: bool) {
     if window.label().starts_with("overlay") {
+        #[cfg(target_os = "macos")]
+        if macos_desktop::paused(window.app_handle()) {
+            return;
+        }
         let _ = window.set_ignore_cursor_events(ignore);
     }
 }
@@ -117,6 +131,8 @@ fn overlay_ready(app: AppHandle, state: tauri::State<AppState>) {
     READY.store(true, Ordering::SeqCst);
     let s = state.settings.lock().unwrap().clone();
     push_settings(&app, &s);
+    #[cfg(target_os = "macos")]
+    emit_cmd(&app, "paused", json!(macos_desktop::paused(&app)));
 }
 #[tauri::command]
 fn open_settings(app: AppHandle) {
@@ -671,6 +687,8 @@ fn mac_set_level(w: &tauri::WebviewWindow, level: i64) {
 
 #[cfg(target_os = "macos")]
 fn start_overlay(app: &AppHandle) -> tauri::Result<()> {
+    use std::time::Instant;
+
     let _ = app.set_activation_policy(tauri::ActivationPolicy::Accessory); // Dock 에 아이콘을 만들지 않는다
     let mons = mac_monitors(app);
     // macOS 는 창 하나가 여러 모니터에 걸쳐 보이지 않으므로, 모니터마다 눈 창을 하나씩 띄운다
@@ -692,7 +710,9 @@ fn start_overlay(app: &AppHandle) -> tauri::Result<()> {
             .build()?;
         w.set_ignore_cursor_events(true)?;
         mac_set_level(&w, 25);
-        w.show()?;
+        if !macos_desktop::paused(app) {
+            w.show()?;
+        }
         log_line(app.clone(), format!("mac overlay-{k}: pos={:?} size={:?}", w.outer_position().ok(), w.outer_size().ok()));
     }
     // Dock 의 가로 범위: 손쉬운 사용 권한이 있어야 읽을 수 있다. 처음 한 번 허용을 요청하고, 0.5초마다 읽는다
@@ -703,6 +723,9 @@ fn start_overlay(app: &AppHandle) -> tauri::Result<()> {
         let mut last = String::new();
         loop {
             std::thread::sleep(Duration::from_millis(500));
+            if macos_desktop::paused(&app_ax) {
+                continue;
+            }
             let trusted = mac::ax_trusted();
             let mut r = None;
             if trusted {
@@ -732,8 +755,29 @@ fn start_overlay(app: &AppHandle) -> tauri::Result<()> {
         let mut next_snapshot_tick = 0u64;
         let mut ready_at = 0u64;
         let (mut log_after, mut logged) = (0u64, 0u32);
+        let mut next_lock_check = Instant::now();
+        let mut last_locked = None;
+        let mut refresh_after_pause = true;
         loop {
-            std::thread::sleep(Duration::from_millis(16));
+            let delay = if macos_desktop::paused(&app2) { 250 } else { 16 };
+            std::thread::sleep(Duration::from_millis(delay));
+            let now = Instant::now();
+            if now >= next_lock_check {
+                next_lock_check = now + Duration::from_millis(250);
+                if let Some(locked) = macos_desktop::screen_locked() {
+                    if last_locked != Some(locked) {
+                        last_locked = Some(locked);
+                        let handle = app2.clone();
+                        let _ = app2.run_on_main_thread(move || {
+                            macos_desktop::update_pause(&handle, macos_desktop::PauseChange::ScreenLocked(locked));
+                        });
+                    }
+                }
+            }
+            if last_locked == Some(true) || macos_desktop::paused(&app2) {
+                refresh_after_pause = true;
+                continue;
+            }
             tick += 1;
             if !READY.load(Ordering::SeqCst) {
                 continue;
@@ -743,6 +787,11 @@ fn start_overlay(app: &AppHandle) -> tauri::Result<()> {
             }
             if stress.is_some() && tick == ready_at + 300 {
                 emit_cmd(&app2, "stress", json!(stress));
+            }
+            if refresh_after_pause {
+                last_cur = (i32::MIN, 0);
+                last_modifier = None;
+                next_snapshot_tick = tick;
             }
             let cur = mac::cursor();
             let cursor_moved = cur != last_cur;
@@ -756,11 +805,12 @@ fn start_overlay(app: &AppHandle) -> tauri::Result<()> {
             let modifier = mac::modifier();
             let dock = *mac::DOCK.lock().unwrap();
             let mut changed = last_modifier != Some(modifier) || last_dock != dock;
-            if tick % 32 == 0 {
+            if refresh_after_pause || tick % 32 == 0 {
                 let current_displays = mac_monitors(&app2);
                 changed |= current_displays != displays;
                 displays = current_displays;
             }
+            refresh_after_pause = false;
 
             // 창 배치가 안정됐을 때만 창 목록의 조회 간격을 늘린다.
             if tick >= next_snapshot_tick || (cursor_moved && tick >= next_snapshot_tick.saturating_sub(4)) {
@@ -816,22 +866,33 @@ fn main() {
 
             let open = MenuItem::with_id(app, "open", "설정 열기", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "종료", true, None::<&str>)?;
+            #[cfg(target_os = "macos")]
+            let menu = {
+                let pause = MenuItem::with_id(app, "pause", "눈 일시정지", true, None::<&str>)?;
+                let menu = Menu::with_items(app, &[&pause, &open, &quit])?;
+                app.manage(macos_desktop::Controls::new(pause));
+                menu
+            };
+            #[cfg(not(target_os = "macos"))]
             let menu = Menu::with_items(app, &[&open, &quit])?;
-            let mut tray = TrayIconBuilder::new().tooltip("소복소복").menu(&menu).show_menu_on_left_click(false);
+            let mut tray = TrayIconBuilder::new().tooltip("소복소복").menu(&menu).show_menu_on_left_click(cfg!(target_os = "macos"));
             if let Some(icon) = app.default_window_icon() {
                 tray = tray.icon(icon.clone());
             }
-            tray.on_menu_event(|app, ev| match ev.id().as_ref() {
+            let tray = tray.on_menu_event(|app, ev| match ev.id().as_ref() {
+                #[cfg(target_os = "macos")]
+                "pause" => macos_desktop::update_pause(app, macos_desktop::PauseChange::Toggle),
                 "open" => show_settings(app),
                 "quit" => app.exit(0),
                 _ => {}
-            })
-            .on_tray_icon_event(|tray, ev| {
+            });
+            #[cfg(not(target_os = "macos"))]
+            let tray = tray.on_tray_icon_event(|tray, ev| {
                 if let TrayIconEvent::Click { button: MouseButton::Left, button_state: MouseButtonState::Up, .. } = ev {
                     show_settings(tray.app_handle());
                 }
-            })
-            .build(app)?;
+            });
+            tray.build(app)?;
 
             start_overlay(&handle)?;
             Ok(())

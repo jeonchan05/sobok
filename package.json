@@ -1,6 +1,6 @@
 {
   "name": "sobok",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "눈 내리는 바탕화면 위젯 — 눈을 굴려 눈사람을 만든다",
   "main": "electron/main.js",
   "private": true,

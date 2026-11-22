@@ -94,9 +94,11 @@
   </section>
 
   <div class="acts">
+    <button id="seoulTheme" hidden>서울 겨울 테마 적용</button>
     <button data-act="plow">제설차 부르기</button>
     <button data-act="quit" class="quit">종료</button>
   </div>
+  <p id="themeStatus" class="foot" role="status" hidden></p>
   <p class="foot">
     <kbd id="modKey">Ctrl</kbd> 누른 채 눈 클릭 → 눈덩이 만들기
   </p>
@@ -116,7 +118,8 @@
   const fontEl = document.getElementById('font'), fontVal = document.getElementById('fontVal');
   const paintFont = () => { fontEl.value = state.font || 1; fontVal.textContent = Math.round((state.font || 1) * 100) + '%'; };
   fontEl.addEventListener('input', () => { state.font = Number(fontEl.value); paintFont(); api.set('font', state.font); });
-  api.get().then(s => { state = s; paint(state); paintFont(); });
+  const refreshSettings = () => api.get().then(s => { state = s; paint(state); paintFont(); });
+  refreshSettings();
   document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
     const key = b.parentElement.dataset.key, raw = b.dataset.v, value = isNaN(Number(raw)) ? raw : Number(raw);
     state[key] = value; paint(state); api.set(key, value);
@@ -130,7 +133,25 @@
   }));
   document.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => api.action(b.dataset.act)));
   // 창을 다시 띄울 때마다 최신 값으로
-  window.addEventListener('focus', () => api.get().then(s => { state = s; paint(state); paintFont(); }));
+  window.addEventListener('focus', refreshSettings);
+  if (window.__TAURI__ && /Mac/i.test(navigator.platform || navigator.userAgent)) {
+    const theme = document.getElementById('seoulTheme'), status = document.getElementById('themeStatus');
+    theme.hidden = false;
+    theme.addEventListener('click', async () => {
+      theme.disabled = true;
+      status.hidden = false;
+      status.textContent = '서울 겨울 테마를 적용하는 중…';
+      try {
+        await api.action('seoul');
+        await refreshSettings();
+        status.textContent = '기본 디스플레이에 서울 겨울 배경을 적용했어요.';
+      } catch (error) {
+        status.textContent = String(error);
+      } finally {
+        theme.disabled = false;
+      }
+    });
+  }
 </script>
 <script>if (/Mac/i.test(navigator.platform || navigator.userAgent)) document.getElementById("modKey").textContent = "⌘";</script>
 </body>

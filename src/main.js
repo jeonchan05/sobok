@@ -412,6 +412,7 @@
     });
     window.snowNative.onCommand((name, arg) => {
       if (name === 'space') switchSpace(arg);
+      else if (name === 'paused') setPaused(arg);
       else if (name === 'fade') { fg.style.transition = 'opacity ' + (arg ? '0.25s' : '0.15s') + ' ease'; fg.style.opacity = arg ? '1' : '0'; }
       else if (name === 'reset') { spaces.clear(); spaceKey = 'normal'; setup(); }
       else if (name === 'snowRate') world.snowRate = arg;
@@ -769,8 +770,24 @@
   const normalCalmMs = MAC_WIDGET ? 15 : 30;
   let calmMs = normalCalmMs;
   let last = 0, slow = 0, frames = 0;
+  let paused = false, frameId = 0;
+  function setPaused(value) {
+    if (paused === value) return;
+    paused = value;
+    last = 0;
+    if (paused) {
+      cancelAnimationFrame(frameId);
+      world.pointer.x = world.pointer.y = -9999;
+      world.pointer.ctrl = world.ctrl = false;
+      up();
+      passing = true;
+    } else {
+      frameId = requestAnimationFrame(frame);
+    }
+  }
   function frame(now) {
-    requestAnimationFrame(frame);
+    if (paused) return;
+    frameId = requestAnimationFrame(frame);
     if (!last) last = now;
     const calm = NATIVE && !busy();
     if (calm && now - last < calmMs) return;
@@ -839,12 +856,16 @@
   if (document.fonts && document.fonts.load) document.fonts.load('16px "SnowFont"', '눈사람').catch(() => {});
 
   // 클릭 통과 상태가 메인 프로세스와 어긋나더라도 1초 안에 다시 맞춰지도록 주기적으로 알려 준다
-  if (NATIVE) setInterval(() => { if (!world.held && !world.pressMan) refreshHover(); window.snowNative.setIgnore(passing); }, 1000);
+  if (NATIVE) setInterval(() => {
+    if (paused) return;
+    if (!world.held && !world.pressMan) refreshHover();
+    window.snowNative.setIgnore(passing);
+  }, 1000);
 
   SX.sprites.build();
   setup();
   if (NATIVE) window.snowNative.ready();
   SX.desktop.tickClock();
   setInterval(SX.desktop.tickClock, 15000);
-  requestAnimationFrame(frame);
+  frameId = requestAnimationFrame(frame);
 })();
